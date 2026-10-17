@@ -33,8 +33,15 @@ export const seedQuestions = (questions: Question[]) =>
             question.imageKind === "original-crop"
           )
             store.put(question);
-          else if (!marker.result && !existing.result) store.add(question);
-          if (!marker.result) markers.put({ id: question.id });
+          else if (
+            !existing.result &&
+            (!marker.result ||
+              (question.imageKind === "original-crop" &&
+                marker.result.imageKind !== "original-crop"))
+          )
+            store.add(question);
+          if (!marker.result || marker.result.imageKind !== question.imageKind)
+            markers.put({ id: question.id, imageKind: question.imageKind });
         };
       };
     }

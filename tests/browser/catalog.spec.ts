@@ -1,12 +1,36 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import catalog from "../../src/catalog.json" with { type: "json" };
+import { readFile } from "node:fs/promises";
+
+async function emptyLibrary(page: Page) {
+  await page.goto("/");
+  await expect(page.locator(".stats-strip")).toContainText("12個");
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const req = indexedDB.open("doorplate-meta", 2);
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction(["questions", "attempts"], "readwrite");
+          tx.objectStore("questions").clear();
+          tx.objectStore("attempts").clear();
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+  );
+  await page.reload();
+}
 
 async function sheetFixture(page: Page) {
   return page.evaluate(async (entries) => {
     const canvas = document.createElement("canvas");
-    canvas.width = 2048;
-    canvas.height = 1151;
+    canvas.width = 1018;
+    canvas.height = 1280;
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -47,10 +71,123 @@ async function importSheet(page: Page, image: string) {
   await expect(page.locator(".symbol-card")).toHaveCount(12);
 }
 
+test("bundled twelve crops exactly match the uploaded original source pixels", async ({
+  page,
+}) => {
+  const original = await readFile(
+    new URL("../../src/assets/yilan-original.png", import.meta.url),
+  );
+  await page.goto("/");
+  await expect(page.locator(".stats-strip")).toContainText("12個");
+  await expect(
+    page.getByRole("button", { name: "查看答案", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "符號圖鑑", exact: true })
+    .click();
+  await expect(page.locator(".symbol-card")).toHaveCount(12);
+  const sourceHashes = await page.evaluate(
+    async ({ image, entries }) => {
+      const im = new Image();
+      im.src = image;
+      await im.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = im.width;
+      canvas.height = im.height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(im, 0, 0);
+      return Promise.all(
+        entries.map(async (q) => ({
+          district: q.district,
+          hash: [
+            ...new Uint8Array(
+              await crypto.subtle.digest(
+                "SHA-256",
+                ctx.getImageData(
+                  ...(q.rect as [number, number, number, number]),
+                ).data,
+              ),
+            ),
+          ],
+        })),
+      );
+    },
+    {
+      image: "data:image/png;base64," + original.toString("base64"),
+      entries: catalog,
+    },
+  );
+  const cropped = await page
+    .locator(".library-image img")
+    .evaluateAll(async (images) =>
+      Promise.all(
+        images.map(async (el) => {
+          const img = el as HTMLImageElement;
+          await img.decode();
+          const c = document.createElement("canvas");
+          c.width = img.naturalWidth;
+          c.height = img.naturalHeight;
+          const ctx = c.getContext("2d")!;
+          ctx.drawImage(img, 0, 0);
+          return {
+            name: img.alt,
+            hash: [
+              ...new Uint8Array(
+                await crypto.subtle.digest(
+                  "SHA-256",
+                  ctx.getImageData(0, 0, c.width, c.height).data,
+                ),
+              ),
+            ],
+          };
+        }),
+      ),
+    );
+  for (const source of sourceHashes)
+    expect(cropped.find((q) => q.name.includes(source.district))?.hash).toEqual(
+      source.hash,
+    );
+  await expect(page.locator("main")).not.toContainText(
+    /AI\s*參考圖|重製|生成|重繪/,
+  );
+  // Deleting eleven questions in this isolated browser leaves one real 礁溪 crop.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const req = indexedDB.open("doorplate-meta", 2);
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction("questions", "readwrite");
+          const cursor = tx.objectStore("questions").openCursor();
+          cursor.onsuccess = () => {
+            const c = cursor.result;
+            if (c) {
+              if (c.value.district !== "礁溪鄉") c.delete();
+              c.continue();
+            }
+          };
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+  );
+  await page.reload();
+  await expect(page.locator(".stats-strip")).toContainText("1個");
+  await page.getByLabel("這個符號來自哪個鄉鎮市區？").fill("礁溪");
+  await page.getByRole("button", { name: "確認答案", exact: true }).click();
+  await expect(page.locator(".answer-result")).toHaveClass(/correct/);
+  await page.reload();
+  await expect(page.locator(".stats-strip")).toContainText("1個");
+});
+
 test("crops the supplied original pixels into twelve questions and accepts bare place names", async ({
   page,
 }) => {
-  await page.goto("/");
+  await emptyLibrary(page);
   await expect(
     page.getByRole("heading", { name: "收集第一個門牌符號" }),
   ).toBeVisible();
@@ -155,19 +292,24 @@ test("crops the supplied original pixels into twelve questions and accepts bare 
   await expect(page.locator(".stats-strip")).toContainText("100%");
 });
 
-test("hides legacy redraws, preserves custom data, and replaces redraws using original crops", async ({
+test("upgrades legacy defaults and markers to original crops while preserving custom data", async ({
   page,
 }) => {
-  await page.goto("/");
+  await emptyLibrary(page);
   await expect(page.locator(".original-import-panel")).toBeVisible();
   const fixture = await sheetFixture(page);
   await page.evaluate(
-    (image) =>
+    ({ image, entries }) =>
       new Promise<void>((resolve, reject) => {
         const req = indexedDB.open("doorplate-meta", 2);
         req.onsuccess = () => {
           const db = req.result;
-          const tx = db.transaction(["questions", "attempts"], "readwrite");
+          const tx = db.transaction(
+            ["questions", "attempts", "catalog"],
+            "readwrite",
+          );
+          for (const entry of entries)
+            tx.objectStore("catalog").put({ id: entry.id });
           const base = {
             county: "宜蘭縣",
             image,
@@ -201,15 +343,33 @@ test("hides legacy redraws, preserves custom data, and replaces redraws using or
           tx.onerror = () => reject(tx.error);
         };
       }),
-    fixture.image,
+    { image: fixture.image, entries: catalog },
   );
   await page.reload();
-  await expect(page.locator(".stats-strip")).toContainText("1個");
+  await expect(page.locator(".stats-strip")).toContainText("13個");
   await page
     .getByRole("navigation")
     .getByRole("button", { name: "符號圖鑑", exact: true })
     .click();
-  await expect(page.locator(".symbol-details h2")).toHaveText("永康區");
+  await expect(page.locator(".symbol-card")).toHaveCount(13);
+  await expect(
+    page.locator(".symbol-details h2").filter({ hasText: "永康區" }),
+  ).toHaveCount(1);
+  const upgraded = page
+    .locator(".symbol-card")
+    .filter({
+      has: page.getByRole("heading", { name: "礁溪鄉", exact: true }),
+    });
+  await expect(upgraded.locator("img")).not.toHaveAttribute(
+    "src",
+    fixture.image,
+  );
+  const custom = page
+    .locator(".symbol-card")
+    .filter({
+      has: page.getByRole("heading", { name: "永康區", exact: true }),
+    });
+  await expect(custom.locator("img")).toHaveAttribute("src", fixture.image);
   await page.getByLabel("選擇宜蘭門牌原圖").setInputFiles({
     name: "original.png",
     mimeType: "image/png",
@@ -236,7 +396,7 @@ test("hides legacy redraws, preserves custom data, and replaces redraws using or
 test("rejects the wrong source layout and generated-image imports without partial writes", async ({
   page,
 }) => {
-  await page.goto("/");
+  await emptyLibrary(page);
   await expect(page.locator(".original-import-panel")).toBeVisible();
   const image = await page.evaluate(() => {
     const c = document.createElement("canvas");
