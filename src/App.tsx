@@ -39,12 +39,14 @@ import {
 import { downloadDataset, parseDataset } from "./dataset";
 import {
   missedIds,
+  displayNote,
   normalizeAnswer,
   safeSource,
   SOURCE_URL,
   statsFor,
 } from "./logic";
 import type { Attempt, Page, Question } from "./types";
+import { version as appVersion } from "../package.json";
 
 const pages: { id: Page; name: string; icon: typeof Target }[] = [
   { id: "practice", name: "練習模式", icon: Target },
@@ -268,7 +270,7 @@ export default function App() {
         <div className="sidebar-bottom">
           <span className="local-dot" />
           資料保存在此瀏覽器<small>記得定期匯出題庫備份</small>
-          <span className="version">DOORPLATE META · V0.1</span>
+          <span className="version">DOORPLATE META · V{appVersion}</span>
         </div>
       </aside>
       <div className="main-shell">
@@ -345,9 +347,7 @@ export default function App() {
                 <ImagePlus size={24} />
                 <div>
                   <strong>使用原圖，直接裁出宜蘭 12 題</strong>
-                  <p>
-                    選擇完整的宜蘭縣門牌整理圖，預覽並核對裁切後即可練習。舊版生成圖已停用，自訂題目與紀錄保留。
-                  </p>
+                  <p>選擇完整的宜蘭縣門牌整理圖，預覽並核對裁切後即可練習。</p>
                 </div>
                 <button
                   className="button primary"
@@ -518,7 +518,7 @@ export default function App() {
                       <h2>參考來源：life.cq 的門牌符號整理</h2>
                       <p>
                         宜蘭縣 12
-                        個地區對應已整理。請選擇完整原圖，即可直接裁出不含文字的符號；所有圖案保留來源像素，不再使用生成圖。
+                        個地區對應已整理。可匯入完整原圖，直接裁出不含文字的符號。
                       </p>
                       <button
                         className="button secondary"
@@ -545,7 +545,8 @@ export default function App() {
           )}
           <footer className="site-footer">
             <span>
-              <Compass size={15} /> A LITTLE DETAIL. A WHOLE NEW PLACE.
+              <Compass size={15} /> A LITTLE DETAIL. A WHOLE NEW PLACE.{" "}
+              <span aria-label="網站版本">v{appVersion}</span>
             </span>
             <span>Made for curious minds, one doorplate at a time.</span>
           </footer>
@@ -726,7 +727,7 @@ function Library({
         <span>
           共 <strong>{filtered.length}</strong> 個符號
         </span>
-        <span>原圖裁切，不使用生成圖</span>
+        <span>依地區查找門牌符號</span>
       </div>
       {filtered.length ? (
         <>
@@ -749,10 +750,7 @@ function Library({
                     {q.county}
                   </span>
                   <h2>{q.district}</h2>
-                  {q.imageKind === "original-crop" && (
-                    <span className="redraw-badge">原圖裁切</span>
-                  )}
-                  {q.note && <p>{q.note}</p>}
+                  {displayNote(q.note) && <p>{displayNote(q.note)}</p>}
                   <div className="symbol-card-bottom">
                     {safeSource(q.source) ? (
                       <a

@@ -37,7 +37,7 @@ async function cropSheet(src: string): Promise<Question[]> {
         height: height / SOURCE_HEIGHT,
       }),
       source: SOURCE_URL,
-      note: `辨識重點：${entry.clue}。符號由 life.cq 宜蘭縣門牌整理原圖直接裁切，未使用生成或重繪。`,
+      note: `辨識重點：${entry.clue}。`,
       createdAt: new Date().toISOString(),
       imageKind: "original-crop" as const,
     };

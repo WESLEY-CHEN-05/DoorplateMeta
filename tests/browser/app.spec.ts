@@ -82,6 +82,100 @@ async function importQuestions(page: Page) {
   await expect(page.locator(".symbol-card")).toHaveCount(2);
 }
 
+async function importJiaoxi(page: Page) {
+  const data = await createDataset(page);
+  data.questions = [
+    {
+      ...data.questions[0],
+      county: "宜蘭縣",
+      district: "礁溪鄉",
+      note: "辨識重點：溫泉。地區對應依使用者提供的 life.cq 宜蘭縣門牌整理圖。此圖為 AI 參考圖重製，細節可能與實際門牌不同，非原圖裁切。",
+    },
+  ];
+  await page
+    .getByLabel("選擇 JSON 題庫")
+    .setInputFiles({
+      name: "jiaoxi.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(data)),
+    });
+  await page.getByRole("checkbox", { name: /我已核對整份題庫/ }).check();
+  await page.getByRole("button", { name: "確認匯入", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "練習模式", exact: true })
+    .click();
+}
+
+test("accepts bare 礁溪 and visually identical pasted place names", async ({
+  page,
+}) => {
+  await importJiaoxi(page);
+  for (const text of [
+    "礁溪",
+    "礁溪鄉",
+    "礁溪附近",
+    "礁\u200b溪",
+    "礁\u2060溪",
+  ]) {
+    await page.getByLabel("這個符號來自哪個鄉鎮市區？").fill(text);
+    await page.getByRole("button", { name: "確認答案", exact: true }).click();
+    await expect(page.locator(".answer-result")).toHaveClass(/correct/);
+    await page.getByRole("button", { name: "下一題", exact: true }).click();
+  }
+});
+
+test("does not grade an unfinished Chinese composition and uses the final input value", async ({
+  page,
+}) => {
+  await importJiaoxi(page);
+  const input = page.getByLabel("這個符號來自哪個鄉鎮市區？");
+  await input.fill("礁");
+  await input.evaluate((el) =>
+    el.dispatchEvent(
+      new CompositionEvent("compositionstart", { bubbles: true, data: "礁" }),
+    ),
+  );
+  await input.press("Enter");
+  await expect(page.locator(".answer-result")).toHaveCount(0);
+  // Final composition value can reach the DOM before React processes its input event.
+  await input.evaluate((el: HTMLInputElement) => {
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )!.set!.call(el, "礁溪");
+    el.dispatchEvent(
+      new CompositionEvent("compositionend", { bubbles: true, data: "礁溪" }),
+    );
+  });
+  await input.press("Enter");
+  await expect(page.locator(".answer-result")).toHaveClass(/correct/);
+});
+
+test("does not show obsolete image-generation explanations from stored notes", async ({
+  page,
+}) => {
+  await importJiaoxi(page);
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "符號圖鑑", exact: true })
+    .click();
+  await expect(page.locator("main")).not.toContainText(
+    /AI\s*參考圖|重製|生成|重繪/,
+  );
+  await expect(page.locator(".symbol-details")).toContainText("辨識重點：溫泉");
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "練習模式", exact: true })
+    .click();
+  await page.getByRole("button", { name: "查看答案", exact: true }).click();
+  await expect(page.locator(".answer-result")).not.toContainText(
+    /AI\s*參考圖|重製|生成|重繪/,
+  );
+  await expect(page.locator(".answer-result")).toContainText("辨識重點：溫泉");
+});
+
 test("empty state is honest and demo does not create fake learning data", async ({
   page,
 }) => {

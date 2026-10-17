@@ -34,13 +34,11 @@ async function sheetFixture(page: Page) {
 }
 
 async function importSheet(page: Page, image: string) {
-  await page
-    .getByLabel("選擇宜蘭門牌原圖")
-    .setInputFiles({
-      name: "original.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(image.split(",")[1], "base64"),
-    });
+  await page.getByLabel("選擇宜蘭門牌原圖").setInputFiles({
+    name: "original.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(image.split(",")[1], "base64"),
+  });
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.locator(".import-preview img")).toHaveCount(12);
   await page.getByRole("checkbox", { name: /我已核對整份題庫/ }).check();
@@ -144,7 +142,7 @@ test("crops the supplied original pixels into twelve questions and accepts bare 
     target,
   );
   await expect(page.locator(".practice-main")).not.toContainText("礁溪");
-  await expect(page.locator(".reference-notice")).toContainText("原圖裁切");
+  await expect(page.locator(".reference-notice")).toHaveCount(0);
   await page.getByRole("button", { name: /強力模糊/ }).click();
   await expect(page.locator(".question-image-frame img")).toHaveCSS(
     "filter",
@@ -212,13 +210,11 @@ test("hides legacy redraws, preserves custom data, and replaces redraws using or
     .getByRole("button", { name: "符號圖鑑", exact: true })
     .click();
   await expect(page.locator(".symbol-details h2")).toHaveText("永康區");
-  await page
-    .getByLabel("選擇宜蘭門牌原圖")
-    .setInputFiles({
-      name: "original.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(fixture.image.split(",")[1], "base64"),
-    });
+  await page.getByLabel("選擇宜蘭門牌原圖").setInputFiles({
+    name: "original.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(fixture.image.split(",")[1], "base64"),
+  });
   await page.getByRole("checkbox", { name: /我已核對整份題庫/ }).check();
   await page.getByRole("button", { name: "確認匯入", exact: true }).click();
   await expect(page.locator(".symbol-card")).toHaveCount(13);
@@ -248,35 +244,31 @@ test("rejects the wrong source layout and generated-image imports without partia
     c.height = 40;
     return c.toDataURL("image/png");
   });
-  await page
-    .getByLabel("選擇宜蘭門牌原圖")
-    .setInputFiles({
-      name: "wrong.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(image.split(",")[1], "base64"),
-    });
+  await page.getByLabel("選擇宜蘭門牌原圖").setInputFiles({
+    name: "wrong.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(image.split(",")[1], "base64"),
+  });
   await expect(page.getByRole("alert")).toContainText("完整、未裁邊");
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page
-    .getByLabel("選擇 JSON 題庫")
-    .setInputFiles({
-      name: "old.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(
-        JSON.stringify({
-          version: 1,
-          questions: [
-            {
-              county: "宜蘭縣",
-              district: "礁溪鄉",
-              image,
-              imageKind: "reference-redraw",
-            },
-          ],
-        }),
-      ),
-    });
-  await expect(page.getByRole("alert")).toContainText("舊版 AI 重製圖");
+  await page.getByLabel("選擇 JSON 題庫").setInputFiles({
+    name: "old.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(
+      JSON.stringify({
+        version: 1,
+        questions: [
+          {
+            county: "宜蘭縣",
+            district: "礁溪鄉",
+            image,
+            imageKind: "reference-redraw",
+          },
+        ],
+      }),
+    ),
+  });
+  await expect(page.getByRole("alert")).toContainText("舊版題庫格式已停用");
   await page.reload();
   await expect(page.locator(".stats-strip")).toContainText("0個");
 });

@@ -63,7 +63,7 @@ export async function parseDataset(text: string): Promise<Question[]> {
         fail(`${field} 必須是 2,000 字內的文字。`);
     }
     if (item.imageKind === "reference-redraw")
-      fail("這是舊版 AI 重製圖，請改匯入原圖裁切的題庫。");
+      fail("這份舊版題庫格式已停用，請重新匯入圖片或新版題庫。");
     if (item.imageKind !== undefined && item.imageKind !== "original-crop")
       fail("不支援的圖片來源類型。");
     const fingerprint = county!.county + district! + item.image;

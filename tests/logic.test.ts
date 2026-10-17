@@ -7,6 +7,7 @@ import {
   safeSource,
   shuffled,
   statsFor,
+  displayNote,
 } from "../src/logic.ts";
 import type { Attempt } from "../src/types.ts";
 
@@ -65,6 +66,35 @@ test("accepts 礁溪 substrings and does not require or validate an administrati
 });
 test("normalizes full width characters and punctuation consistently", () => {
   assert.equal(normalizeAnswer(" 台南市， 永康區 "), "臺南市永康區");
+});
+test("ignores invisible paste characters and a stored county prefix", () => {
+  for (const input of ["礁\u200b溪", "礁\u2060溪", "礁\ufeff溪"])
+    assert.equal(
+      isCorrectAnswer(input, { county: "宜蘭縣", district: "礁溪鄉" }),
+      true,
+    );
+  assert.equal(
+    isCorrectAnswer("礁溪", { county: "宜蘭縣", district: "宜蘭縣礁溪鄉" }),
+    true,
+  );
+});
+test("hides old app-written image explanations while retaining the clue and user notes", () => {
+  const clue = "辨識重點：溫泉。";
+  assert.equal(
+    displayNote(
+      clue + "此圖為 AI 參考圖重製，細節可能與實際門牌不同，非原圖裁切。",
+    ),
+    clue,
+  );
+  assert.equal(displayNote("AI 參考圖重置。" + clue), clue);
+  assert.equal(
+    displayNote(
+      clue + "符號由 life.cq 宜蘭縣門牌整理原圖直接裁切，未使用生成或重繪。",
+    ),
+    clue,
+  );
+  const custom = "留意三條線，和左邊的外框。";
+  assert.equal(displayNote(custom), custom);
 });
 test("review bank uses chronology; correct answer removes a previous mistake", () => {
   const attempts = [

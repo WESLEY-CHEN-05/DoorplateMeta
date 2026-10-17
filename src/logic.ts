@@ -4,7 +4,7 @@ export function normalizeAnswer(value: string): string {
   return value
     .normalize("NFKC")
     .replace(/台/g, "臺")
-    .replace(/[\s·・，,。．、]/g, "")
+    .replace(/[\s\p{Cf}·・，,。．、]/gu, "")
     .trim();
 }
 
@@ -13,12 +13,24 @@ export function isCorrectAnswer(
   question: Pick<Question, "county" | "district">,
 ): boolean {
   const value = normalizeAnswer(input);
-  const placeName = normalizeAnswer(question.district).replace(
-    /[鄉鎮市區]$/u,
-    "",
-  );
+  const county = normalizeAnswer(question.county);
+  let district = normalizeAnswer(question.district);
+  if (county && district.startsWith(county))
+    district = district.slice(county.length);
+  const placeName = district.replace(/[鄉鎮市區]$/u, "");
   // Accept any text containing the full place name, with or without a suffix.
   return placeName.length > 0 && value.includes(placeName);
+}
+
+// Remove only boilerplate written by earlier releases; retain users' clues.
+export function displayNote(note: string): string {
+  return note
+    .replace(/(?:此圖為\s*)?AI\s*參考圖重[製置][^。\n]*(?:。|$)/gu, "")
+    .replace(
+      /符號由 life\.cq 宜蘭縣門牌整理原圖直接裁切，未使用生成或重繪。/gu,
+      "",
+    )
+    .trim();
 }
 
 export function shuffled<T>(items: readonly T[], random = Math.random): T[] {

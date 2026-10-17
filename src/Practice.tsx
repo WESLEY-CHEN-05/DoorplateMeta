@@ -20,6 +20,7 @@ import {
 import { makeDemoImage } from "./images";
 import {
   isCorrectAnswer,
+  displayNote,
   missedIds,
   safeSource,
   shuffled,
@@ -61,6 +62,7 @@ export default function Practice({
   const [result, setResult] = useState<Attempt["outcome"] | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+  const composing = useRef(false);
   const [error, setError] = useState("");
   const [demo, setDemo] = useState(false);
   const [round, setRound] = useState(1);
@@ -82,6 +84,7 @@ export default function Practice({
     : questions.find((q) => q.id === deck[cursor]);
 
   function clear() {
+    composing.current = false;
     setAnswer("");
     setResult(null);
     setError("");
@@ -129,18 +132,20 @@ export default function Practice({
     setTimeout(() => answerRef.current?.focus(), 0);
   }
   async function grade(reveal = false) {
-    if (busyRef.current || !question || result) return;
-    if (!reveal && !answer.trim()) {
+    if (busyRef.current || composing.current || !question || result) return;
+    const submittedAnswer = answerRef.current?.value ?? answer;
+    if (!reveal && !submittedAnswer.trim()) {
       setError("先輸入你判斷的鄉鎮市區。");
       answerRef.current?.focus();
       return;
     }
     busyRef.current = true;
+    setAnswer(submittedAnswer);
     setBusy(true);
     setError("");
     const outcome = reveal
       ? "revealed"
-      : isCorrectAnswer(answer, question)
+      : isCorrectAnswer(submittedAnswer, question)
         ? "correct"
         : "wrong";
     try {
@@ -148,7 +153,7 @@ export default function Practice({
         await onAttempt({
           id: crypto.randomUUID(),
           questionId: question.id,
-          answer: answer.trim(),
+          answer: submittedAnswer.trim(),
           outcome,
           at: new Date().toISOString(),
         });
@@ -311,17 +316,12 @@ export default function Practice({
                 </button>
               </div>
             )}
-            {question?.imageKind === "original-crop" && (
-              <div className="reference-notice">
-                <Focus size={15} />
-                <span>原圖裁切 · 保留來源圖案，未生成或重繪。</span>
-              </div>
-            )}
             {question && (
               <div className="answer-area">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
+                    if (composing.current) return;
                     if (result) next();
                     else void grade();
                   }}
@@ -334,6 +334,22 @@ export default function Practice({
                         ref={answerRef}
                         id="answer"
                         value={answer}
+                        onCompositionStart={() => {
+                          composing.current = true;
+                        }}
+                        onCompositionEnd={(e) => {
+                          composing.current = false;
+                          setAnswer(e.currentTarget.value);
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "Enter" &&
+                            (composing.current ||
+                              e.nativeEvent.isComposing ||
+                              e.nativeEvent.keyCode === 229)
+                          )
+                            e.preventDefault();
+                        }}
                         onChange={(e) => {
                           setAnswer(e.target.value);
                           setError("");
@@ -397,7 +413,9 @@ export default function Practice({
                           {question.county} {question.district}
                         </b>
                       </p>
-                      {question.note && <p>{question.note}</p>}
+                      {displayNote(question.note) && (
+                        <p>{displayNote(question.note)}</p>
+                      )}
                       {safeSource(question.source) && (
                         <a
                           href={safeSource(question.source)}
