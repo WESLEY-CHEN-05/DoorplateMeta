@@ -26,11 +26,15 @@ export const seedQuestions = (questions: Question[]) =>
     for (const question of questions) {
       const marker = markers.get(question.id);
       marker.onsuccess = () => {
-        if (marker.result) return;
         const existing = store.get(question.id);
         existing.onsuccess = () => {
-          if (!existing.result) store.add(question);
-          markers.put({ id: question.id });
+          if (
+            existing.result?.imageKind === "reference-redraw" &&
+            question.imageKind === "original-crop"
+          )
+            store.put(question);
+          else if (!marker.result && !existing.result) store.add(question);
+          if (!marker.result) markers.put({ id: question.id });
         };
       };
     }

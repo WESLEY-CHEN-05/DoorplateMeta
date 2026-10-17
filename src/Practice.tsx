@@ -41,7 +41,7 @@ const modes: {
   icon: typeof Eye;
 }[] = [
   { id: "normal", title: "原始符號", hint: "完整觀察圖案", icon: Eye },
-  { id: "blur", title: "輕度模糊", hint: "模擬遠距離辨識", icon: Focus },
+  { id: "blur", title: "強力模糊", hint: "提高遠距離辨識挑戰", icon: Focus },
   { id: "half", title: "裁切一半", hint: "只留下左側線索", icon: Crop },
 ];
 
@@ -311,10 +311,10 @@ export default function Practice({
                 </button>
               </div>
             )}
-            {question?.imageKind === "reference-redraw" && (
+            {question?.imageKind === "original-crop" && (
               <div className="reference-notice">
                 <Focus size={15} />
-                <span>AI 參考圖重製 · 非原圖裁切，細節以實際門牌為準。</span>
+                <span>原圖裁切 · 保留來源圖案，未生成或重繪。</span>
               </div>
             )}
             {question && (
@@ -338,7 +338,7 @@ export default function Practice({
                           setAnswer(e.target.value);
                           setError("");
                         }}
-                        placeholder="輸入鄉、鎮、市或區的完整名稱"
+                        placeholder="輸入地名即可，不必加鄉鎮市區"
                         disabled={!!result || busy}
                         autoComplete="off"
                         spellCheck={false}
@@ -356,7 +356,9 @@ export default function Practice({
                     </button>
                   </div>
                   <div className="answer-hints">
-                    <span>可輸入地區全名或縣市＋地區；「台／臺」皆可。</span>
+                    <span>
+                      包含完整地名即可；不必加鄉鎮市區，「台／臺」皆可。
+                    </span>
                     <span className="desktop-only">
                       <kbd>Enter</kbd> {result ? "下一題" : "送出"}
                     </span>

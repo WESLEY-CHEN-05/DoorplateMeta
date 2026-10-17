@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import CropModal from "./CropModal";
 import Practice from "./Practice";
-import { loadBundledQuestions } from "./catalog";
+import { cropOriginalSheet, loadBundledQuestions } from "./catalog";
 import {
   clearAttempts,
   deleteQuestion,
@@ -65,6 +65,7 @@ export default function App() {
   const [pendingImport, setPendingImport] = useState<Question[] | null>(null);
   const [busy, setBusy] = useState(false);
   const importInput = useRef<HTMLInputElement>(null);
+  const originalInput = useRef<HTMLInputElement>(null);
   const stats = statsFor(attempts);
   const misses = missedIds(attempts);
   const countyCount = new Set(questions.map((q) => q.county)).size;
@@ -82,7 +83,9 @@ export default function App() {
         if (active) setError((e as Error).message);
       }
       if (active) {
-        setQuestions(q);
+        setQuestions(
+          q.filter((question) => question.imageKind !== "reference-redraw"),
+        );
         setAttempts(a);
       }
     }
@@ -148,10 +151,26 @@ export default function App() {
     setBusy(true);
     try {
       await saveQuestions(pendingImport);
-      setQuestions((q) => [...q, ...pendingImport]);
+      const ids = new Set(pendingImport.map((question) => question.id));
+      setQuestions((q) => [
+        ...q.filter((question) => !ids.has(question.id)),
+        ...pendingImport,
+      ]);
       setToast(`已匯入 ${pendingImport.length} 個符號。`);
       setPendingImport(null);
       setPage("library");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function importOriginal(file?: File) {
+    if (!file || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      setPendingImport(await cropOriginalSheet(file));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -318,6 +337,27 @@ export default function App() {
               </span>
             </div>
           </div>
+          {!loading &&
+            !questions.some(
+              (q) => q.imageKind === "original-crop" && q.county === "宜蘭縣",
+            ) && (
+              <section className="original-import-panel">
+                <ImagePlus size={24} />
+                <div>
+                  <strong>使用原圖，直接裁出宜蘭 12 題</strong>
+                  <p>
+                    選擇完整的宜蘭縣門牌整理圖，預覽並核對裁切後即可練習。舊版生成圖已停用，自訂題目與紀錄保留。
+                  </p>
+                </div>
+                <button
+                  className="button primary"
+                  disabled={busy}
+                  onClick={() => originalInput.current?.click()}
+                >
+                  匯入宜蘭原圖
+                </button>
+              </section>
+            )}
           {error && (
             <div className="global-error" role="alert">
               <span>{error}</span>
@@ -477,10 +517,16 @@ export default function App() {
                     <div>
                       <h2>參考來源：life.cq 的門牌符號整理</h2>
                       <p>
-                        已依你提供的宜蘭縣整理圖加入 12
-                        個鄉鎮市的對應。內建圖片為 AI
-                        參考圖重製，非原圖裁切，細節可能與實際門牌不同；可另行匯入原始照片練習。
+                        宜蘭縣 12
+                        個地區對應已整理。請選擇完整原圖，即可直接裁出不含文字的符號；所有圖案保留來源像素，不再使用生成圖。
                       </p>
+                      <button
+                        className="button secondary"
+                        disabled={busy}
+                        onClick={() => originalInput.current?.click()}
+                      >
+                        匯入宜蘭原圖
+                      </button>
                       <a href={SOURCE_URL} target="_blank" rel="noreferrer">
                         查看 Threads 原文
                         <ExternalLink size={13} />
@@ -505,6 +551,17 @@ export default function App() {
           </footer>
         </main>
       </div>
+      <input
+        type="file"
+        className="visually-hidden"
+        accept="image/png,image/jpeg,image/webp"
+        aria-label="選擇宜蘭門牌原圖"
+        ref={originalInput}
+        onChange={(e) => {
+          void importOriginal(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
       <input
         type="file"
         className="visually-hidden"
@@ -669,7 +726,7 @@ function Library({
         <span>
           共 <strong>{filtered.length}</strong> 個符號
         </span>
-        <span>內建圖為參考圖重製；對應依來源整理</span>
+        <span>原圖裁切，不使用生成圖</span>
       </div>
       {filtered.length ? (
         <>
@@ -692,8 +749,8 @@ function Library({
                     {q.county}
                   </span>
                   <h2>{q.district}</h2>
-                  {q.imageKind === "reference-redraw" && (
-                    <span className="redraw-badge">AI 參考圖重製</span>
+                  {q.imageKind === "original-crop" && (
+                    <span className="redraw-badge">原圖裁切</span>
                   )}
                   {q.note && <p>{q.note}</p>}
                   <div className="symbol-card-bottom">
@@ -855,11 +912,11 @@ function ImportConfirmation({
       onConfirm={onConfirm}
     >
       <p>
-        以下是前 {Math.min(questions.length, 6)}{" "}
+        以下是前 {Math.min(questions.length, 24)}{" "}
         個符號的預覽。請確認題庫來源與地區對應，圖片不可含文字。
       </p>
       <div className="import-preview">
-        {questions.slice(0, 6).map((q) => (
+        {questions.slice(0, 24).map((q) => (
           <div key={q.id}>
             <img src={q.image} alt={`${q.county}${q.district}匯入預覽`} />
             <span>

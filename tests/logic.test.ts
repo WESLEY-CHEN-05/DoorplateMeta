@@ -10,13 +10,17 @@ import {
 } from "../src/logic.ts";
 import type { Attempt } from "../src/types.ts";
 
-test("accepts complete district and county + district, normalizes 台 / 臺 and whitespace", () => {
+test("accepts any answer containing the complete place name, with or without an administrative suffix", () => {
   const q = { county: "臺南市", district: "永康區" };
   for (const value of [
     "永康區",
     " 臺南市 永康區 ",
     "台南市永康區",
     "台南市　永康區",
+    "永康",
+    "永康鄉",
+    "高雄市永康區",
+    "我猜是永康附近",
   ])
     assert.equal(isCorrectAnswer(value, q), true, value);
   assert.equal(
@@ -24,27 +28,38 @@ test("accepts complete district and county + district, normalizes 台 / 臺 and 
     true,
   );
 });
-test("rejects empty, incomplete, wrong-county and substring guesses", () => {
-  const q = { county: "臺南市", district: "永康區" };
+test("rejects empty input and partial or incorrect place names", () => {
+  const q = { county: "宜蘭縣", district: "礁溪鄉" };
   for (const value of [
     "",
     " ",
-    "永康",
-    "南",
-    "永康鄉",
-    "臺南市",
-    "高雄市永康區",
-    "永康區附近",
+    "礁",
+    "溪",
+    "宜蘭縣",
+    "溪礁",
+    "頭城鎮",
+    "永康區",
   ])
     assert.equal(isCorrectAnswer(value, q), false, value);
 });
-test("does not collapse distinct same-name administrative types", () => {
+test("accepts 礁溪 substrings and does not require or validate an administrative suffix", () => {
+  const q = { county: "宜蘭縣", district: "礁溪鄉" };
+  for (const value of [
+    "礁溪",
+    "礁溪鄉",
+    "宜蘭礁溪",
+    "礁溪鎮",
+    "答案是礁溪",
+    "礁溪附近",
+    " 礁 溪 ",
+  ])
+    assert.equal(isCorrectAnswer(value, q), true, value);
   assert.equal(
-    isCorrectAnswer("彰化縣員林市", { county: "彰化縣", district: "員林市" }),
+    isCorrectAnswer("東", { county: "臺南市", district: "東區" }),
     true,
   );
   assert.equal(
-    isCorrectAnswer("員林鎮", { county: "彰化縣", district: "員林市" }),
+    isCorrectAnswer("任何答案", { county: "", district: "" }),
     false,
   );
 });

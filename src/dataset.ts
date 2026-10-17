@@ -62,7 +62,9 @@ export async function parseDataset(text: string): Promise<Question[]> {
       )
         fail(`${field} 必須是 2,000 字內的文字。`);
     }
-    if (item.imageKind !== undefined && item.imageKind !== "reference-redraw")
+    if (item.imageKind === "reference-redraw")
+      fail("這是舊版 AI 重製圖，請改匯入原圖裁切的題庫。");
+    if (item.imageKind !== undefined && item.imageKind !== "original-crop")
       fail("不支援的圖片來源類型。");
     const fingerprint = county!.county + district! + item.image;
     if (fingerprints.has(fingerprint)) continue;
@@ -75,8 +77,8 @@ export async function parseDataset(text: string): Promise<Question[]> {
       source: item.source ?? "",
       note: item.note ?? "",
       createdAt: new Date().toISOString(),
-      ...(item.imageKind === "reference-redraw"
-        ? { imageKind: "reference-redraw" as const }
+      ...(item.imageKind === "original-crop"
+        ? { imageKind: "original-crop" as const }
         : {}),
     });
   }

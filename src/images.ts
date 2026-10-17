@@ -40,8 +40,10 @@ export async function cropImage(src: string, crop: Crop): Promise<string> {
 
 export function rasterizeCrop(image: HTMLImageElement, crop: Crop): string {
   const canvas = document.createElement("canvas");
-  const sw = crop.width * image.width;
-  const sh = crop.height * image.height;
+  const sx = Math.round(crop.x * image.width);
+  const sy = Math.round(crop.y * image.height);
+  const sw = Math.round((crop.x + crop.width) * image.width) - sx;
+  const sh = Math.round((crop.y + crop.height) * image.height) - sy;
   if (sw < 16 || sh < 16)
     throw new Error("框選區域太小，請至少保留 16 × 16 像素。");
   const scale = Math.min(1, 640 / Math.max(sw, sh));
@@ -49,17 +51,7 @@ export function rasterizeCrop(image: HTMLImageElement, crop: Crop): string {
   canvas.height = Math.round(sh * scale);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("此瀏覽器無法處理圖片。");
-  ctx.drawImage(
-    image,
-    crop.x * image.width,
-    crop.y * image.height,
-    sw,
-    sh,
-    0,
-    0,
-    canvas.width,
-    canvas.height,
-  );
+  ctx.drawImage(image, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL("image/png");
 }
 

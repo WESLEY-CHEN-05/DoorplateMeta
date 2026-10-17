@@ -534,7 +534,7 @@ main {
   user-select: none;
 }
 .question-image-frame.blur img {
-  filter: blur(3px);
+  filter: blur(10px);
 }
 .question-image-frame.half img {
   clip-path: inset(0 50% 0 0);
@@ -1080,6 +1080,40 @@ kbd {
   color: #69775b;
   font-size: 10px;
   line-height: 1.8;
+}
+.original-import-panel {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 18px 20px;
+  margin-top: 20px;
+  border: 1px solid #dedfcf;
+  border-radius: 9px;
+  background: #fffaf1;
+  color: #716649;
+}
+.original-import-panel > div {
+  flex: 1;
+}
+.original-import-panel strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.original-import-panel p {
+  font-size: 10px;
+  margin-top: 5px;
+}
+@media (max-width: 760px) {
+  .original-import-panel {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+  .original-import-panel > div {
+    flex-basis: calc(100% - 40px);
+  }
+  .original-import-panel > button {
+    width: 100%;
+  }
 }
 .redraw-badge {
   display: inline-block;

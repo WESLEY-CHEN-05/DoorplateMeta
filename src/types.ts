@@ -6,7 +6,7 @@ export interface Question {
   source: string;
   note: string;
   createdAt: string;
-  imageKind?: "reference-redraw";
+  imageKind?: "original-crop" | "reference-redraw";
 }
 
 export interface Attempt {

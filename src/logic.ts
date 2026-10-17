@@ -13,12 +13,12 @@ export function isCorrectAnswer(
   question: Pick<Question, "county" | "district">,
 ): boolean {
   const value = normalizeAnswer(input);
-  const district = normalizeAnswer(question.district);
-  const county = normalizeAnswer(question.county);
-  // Deliberately accept exact administrative names, never substring or fuzzy matches.
-  return (
-    value.length > 0 && (value === district || value === county + district)
+  const placeName = normalizeAnswer(question.district).replace(
+    /[鄉鎮市區]$/u,
+    "",
   );
+  // Accept any text containing the full place name, with or without a suffix.
+  return placeName.length > 0 && value.includes(placeName);
 }
 
 export function shuffled<T>(items: readonly T[], random = Math.random): T[] {

@@ -5,7 +5,7 @@ import type { Page } from "@playwright/test";
 // cleared all bundled questions. Keep catalog markers to test non-resurrection.
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".question-image-frame img")).toBeVisible();
+  await expect(page.locator(".page-heading h1")).toBeVisible();
   await page.evaluate(
     () =>
       new Promise<void>((resolve, reject) => {
@@ -92,8 +92,12 @@ test("empty state is honest and demo does not create fake learning data", async 
     page.getByRole("heading", { name: "收集第一個門牌符號" }),
   ).toBeVisible();
   await page.getByRole("button", { name: /先用示範題試玩/ }).click();
-  await page.getByRole("button", { name: /輕度模糊/ }).click();
+  await page.getByRole("button", { name: /強力模糊/ }).click();
   await expect(page.locator(".question-image-frame")).toHaveClass(/blur/);
+  await expect(page.locator(".question-image-frame img")).toHaveCSS(
+    "filter",
+    "blur(10px)",
+  );
   await page.getByRole("button", { name: /裁切一半/ }).click();
   await expect(page.locator(".question-image-frame")).toHaveClass(/half/);
   await page.getByLabel("這個符號來自哪個鄉鎮市區？").fill("錯誤區");
@@ -126,12 +130,14 @@ test("import, answer, review, persistence, deduplication, export, and delete", a
     "待辨識的門牌符號",
   );
   await expect(page.locator(".practice-main")).not.toContainText("永康區");
-  await page.getByLabel("這個符號來自哪個鄉鎮市區？").fill("高雄市永康區");
+  await page.getByLabel("這個符號來自哪個鄉鎮市區？").fill("安平區");
   await page.getByRole("button", { name: "確認答案", exact: true }).click();
   await expect(page.locator(".answer-result")).toHaveClass(/wrong/);
   await expect(page.locator(".stats-strip")).toContainText("0%");
   await page.getByRole("checkbox", { name: /只練錯題/ }).check();
-  await page.getByLabel("這個符號來自哪個鄉鎮市區？").fill("台南市 永康區");
+  await page
+    .getByLabel("這個符號來自哪個鄉鎮市區？")
+    .fill("我猜是台南永康附近");
   await page.getByRole("button", { name: "確認答案", exact: true }).click();
   await expect(page.locator(".answer-result")).toHaveClass(/correct/);
   await page.keyboard.press("Enter");
