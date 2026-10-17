@@ -89,11 +89,6 @@ export default function Practice({
   const question = demo
     ? demoQuestion
     : questions.find((q) => q.id === deck[cursor]);
-  const activeModes = modes.map((m) =>
-    m.id === "blur" && question?.county === "屏東縣"
-      ? { ...m, title: "輕度模糊", hint: "保留底色與圖案輪廓" }
-      : m,
-  );
 
   function clear() {
     composing.current = false;
@@ -222,9 +217,7 @@ export default function Practice({
               <span className="corner bottom-right" />
               {question ? (
                 <>
-                  <div
-                    className={`question-image-frame ${mode} ${question.county === "屏東縣" ? "soft-blur" : ""}`}
-                  >
+                  <div className={`question-image-frame ${mode}`}>
                     <img
                       key={question.id}
                       src={question.image}
@@ -234,7 +227,7 @@ export default function Practice({
                   </div>
                   <div className="image-caption">
                     <span className="dot" />
-                    {activeModes.find((m) => m.id === mode)?.title} · 純圖像題目
+                    {modes.find((m) => m.id === mode)?.title} · 純圖像題目
                   </div>
                 </>
               ) : (
@@ -509,7 +502,7 @@ export default function Practice({
             </div>
             <span className="field-label">挑戰難度</span>
             <div className="mode-list">
-              {activeModes.map((m) => (
+              {modes.map((m) => (
                 <button
                   disabled={busy || !!result}
                   key={m.id}

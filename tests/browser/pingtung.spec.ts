@@ -86,15 +86,15 @@ test("all 33 Pingtung crops retain original pixels outside transparent text cuto
   }
 });
 
-test("Pingtung blur is weaker, distance mode shrinks the image, and grading still accepts place names", async ({
+test("Pingtung and Yilan use strong blur, distance mode shrinks the image, and grading accepts place names", async ({
   page,
 }) => {
   await page.goto("/");
   await expect(page.locator(".stats-strip")).toContainText("45個");
   await page.getByLabel("練習範圍").selectOption("屏東縣");
-  await page.getByRole("button", { name: /輕度模糊/ }).click();
+  await page.getByRole("button", { name: /強力模糊/ }).click();
   const image = page.locator(".question-image-frame img");
-  await expect(image).toHaveCSS("filter", "blur(3px)");
+  await expect(image).toHaveCSS("filter", "blur(10px)");
   await page.getByLabel("練習範圍").selectOption("宜蘭縣");
   await expect(image).toHaveCSS("filter", "blur(10px)");
   await expect(page.getByRole("button", { name: /強力模糊/ })).toBeVisible();
