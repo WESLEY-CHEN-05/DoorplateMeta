@@ -17,5 +17,5 @@ export interface Attempt {
   at: string;
 }
 
-export type Difficulty = "normal" | "blur" | "half";
+export type Difficulty = "normal" | "blur" | "half" | "distance";
 export type Page = "practice" | "library" | "manage";

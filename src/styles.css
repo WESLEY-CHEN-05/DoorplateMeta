@@ -538,6 +538,13 @@ main {
 .question-image-frame.blur img {
   filter: blur(10px);
 }
+.question-image-frame.blur.soft-blur img {
+  filter: blur(3px);
+}
+.question-image-frame.distance img {
+  width: 72px;
+  height: 72px;
+}
 .question-image-frame.half img {
   clip-path: inset(0 50% 0 0);
   transform: translateX(25%);

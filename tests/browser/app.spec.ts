@@ -5,7 +5,7 @@ import type { Page } from "@playwright/test";
 // cleared all bundled questions. Keep catalog markers to test non-resurrection.
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".page-heading h1")).toBeVisible();
+  await expect(page.locator(".stats-strip")).toContainText("45個");
   await page.evaluate(
     () =>
       new Promise<void>((resolve, reject) => {
@@ -92,13 +92,11 @@ async function importJiaoxi(page: Page) {
       note: "辨識重點：溫泉。地區對應依使用者提供的 life.cq 宜蘭縣門牌整理圖。此圖為 AI 參考圖重製，細節可能與實際門牌不同，非原圖裁切。",
     },
   ];
-  await page
-    .getByLabel("選擇 JSON 題庫")
-    .setInputFiles({
-      name: "jiaoxi.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(data)),
-    });
+  await page.getByLabel("選擇 JSON 題庫").setInputFiles({
+    name: "jiaoxi.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(data)),
+  });
   await page.getByRole("checkbox", { name: /我已核對整份題庫/ }).check();
   await page.getByRole("button", { name: "確認匯入", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);

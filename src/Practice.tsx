@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
+  Binoculars,
   BookOpen,
   Check,
   CheckCheck,
@@ -44,6 +45,12 @@ const modes: {
   { id: "normal", title: "原始符號", hint: "完整觀察圖案", icon: Eye },
   { id: "blur", title: "強力模糊", hint: "提高遠距離辨識挑戰", icon: Focus },
   { id: "half", title: "裁切一半", hint: "只留下左側線索", icon: Crop },
+  {
+    id: "distance",
+    title: "遠處模式",
+    hint: "縮小圖像，模擬遠距離觀察",
+    icon: Binoculars,
+  },
 ];
 
 export default function Practice({
@@ -82,6 +89,11 @@ export default function Practice({
   const question = demo
     ? demoQuestion
     : questions.find((q) => q.id === deck[cursor]);
+  const activeModes = modes.map((m) =>
+    m.id === "blur" && question?.county === "屏東縣"
+      ? { ...m, title: "輕度模糊", hint: "保留底色與圖案輪廓" }
+      : m,
+  );
 
   function clear() {
     composing.current = false;
@@ -210,7 +222,9 @@ export default function Practice({
               <span className="corner bottom-right" />
               {question ? (
                 <>
-                  <div className={`question-image-frame ${mode}`}>
+                  <div
+                    className={`question-image-frame ${mode} ${question.county === "屏東縣" ? "soft-blur" : ""}`}
+                  >
                     <img
                       key={question.id}
                       src={question.image}
@@ -220,7 +234,7 @@ export default function Practice({
                   </div>
                   <div className="image-caption">
                     <span className="dot" />
-                    {modes.find((m) => m.id === mode)?.title} · 純圖像題目
+                    {activeModes.find((m) => m.id === mode)?.title} · 純圖像題目
                   </div>
                 </>
               ) : (
@@ -453,7 +467,7 @@ export default function Practice({
               <span>
                 <CheckCheck size={15} />
                 {question
-                  ? "符號裁圖不含地名與門牌文字"
+                  ? "題目不含地名與路名文字"
                   : "先整理，再辨識。從一張圖開始。"}
               </span>
               <span className="mono">
@@ -495,7 +509,7 @@ export default function Practice({
             </div>
             <span className="field-label">挑戰難度</span>
             <div className="mode-list">
-              {modes.map((m) => (
+              {activeModes.map((m) => (
                 <button
                   disabled={busy || !!result}
                   key={m.id}

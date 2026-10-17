@@ -166,8 +166,8 @@ export default function CropModal({ onClose, onSave }: Props) {
         </button>
       </div>
       <p className="muted dialog-intro">
-        從門牌照片或對照表中，裁出<strong>只有圖案、沒有文字</strong>
-        的部分。同一張圖可以連續建立多題。
+        從門牌照片或對照表中，保留<strong>圖案與數字，避開地名與路名</strong>
+        。同一張圖可以連續建立多題。
       </p>
       <div className="crop-layout">
         <div className="crop-left">
@@ -235,7 +235,7 @@ export default function CropModal({ onClose, onSave }: Props) {
                 </div>
               </div>
               <p className="tiny muted">
-                觸控也可拖曳框選。裁切後請在右側預覽確認，避開地名、數字與文字。
+                觸控也可拖曳框選。裁切後請在右側預覽確認，避開地名與路名等文字，門牌數字可保留。
               </p>
               <div className="keyboard-crop">
                 <span className="tiny muted">也可用數值調整框選範圍（%）</span>
@@ -359,7 +359,7 @@ export default function CropModal({ onClose, onSave }: Props) {
               disabled={!preview}
               onChange={(e) => setApproved(e.target.checked)}
             />
-            <span>我已確認：裁切圖不含文字，且地區對應正確。</span>
+            <span>我已確認：裁切圖不含地名與路名等文字，且地區對應正確。</span>
           </label>
           {error && (
             <p className="form-error" role="alert">

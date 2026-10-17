@@ -10,6 +10,14 @@
 - 自動測試以這個實際 PNG 驗證每張裁圖的完整像素 SHA-256，而不只測試替代圖片。
 - Threads 連結僅作原作者參考。本次題庫來源是使用者提供的 ZIP，不宣稱成功透過 Threads 下載原圖。
 
+## 屏東門牌原圖
+
+- 使用者提供 `截圖 2026-10-17 下午2.41.40.zip`，內含一張 2440×1392 PNG，原檔完整保存於 `src/assets/pingtung-original.png`。
+- 檔案 SHA-256：`1b74f73230eb4f5c5c51fda9274169903dc02769ab02d24ed0f6415fc6659eaa`。
+- 共 33 個鄉鎮市；對照與座標保存在 `src/pingtung-catalog.json`，沒有增加原圖之外的圖案。
+- 依使用者要求，路名、鄉鎮村里及其他文字區域直接裁成透明，保留門牌數字、底色與圖案；不用生成、重繪、修補或底色填充。裁除邊界已逐張檢查。
+- 瀏覽器測試核對全部 33 張的保留像素與透明裁除區域，來源仍為使用者 ZIP；Threads 連結僅作原作者參考。
+
 ## 地區名稱
 
 - [TaiwanAddressCityAreaRoadChineseEnglishJSON / CityCountyData.json](https://github.com/donma/TaiwanAddressCityAreaRoadChineseEnglishJSON/blob/master/CityCountyData.json)，取得日期 2026-10-17。

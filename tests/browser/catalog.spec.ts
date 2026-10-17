@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 
 async function emptyLibrary(page: Page) {
   await page.goto("/");
-  await expect(page.locator(".stats-strip")).toContainText("12個");
+  await expect(page.locator(".stats-strip")).toContainText("45個");
   await page.evaluate(
     () =>
       new Promise<void>((resolve, reject) => {
@@ -78,7 +78,7 @@ test("bundled twelve crops exactly match the uploaded original source pixels", a
     new URL("../../src/assets/yilan-original.png", import.meta.url),
   );
   await page.goto("/");
-  await expect(page.locator(".stats-strip")).toContainText("12個");
+  await expect(page.locator(".stats-strip")).toContainText("45個");
   await expect(
     page.getByRole("button", { name: "查看答案", exact: true }),
   ).toBeVisible();
@@ -86,6 +86,7 @@ test("bundled twelve crops exactly match the uploaded original source pixels", a
     .getByRole("navigation")
     .getByRole("button", { name: "符號圖鑑", exact: true })
     .click();
+  await page.getByLabel("圖鑑縣市篩選").selectOption("宜蘭縣");
   await expect(page.locator(".symbol-card")).toHaveCount(12);
   const sourceHashes = await page.evaluate(
     async ({ image, entries }) => {
@@ -355,20 +356,16 @@ test("upgrades legacy defaults and markers to original crops while preserving cu
   await expect(
     page.locator(".symbol-details h2").filter({ hasText: "永康區" }),
   ).toHaveCount(1);
-  const upgraded = page
-    .locator(".symbol-card")
-    .filter({
-      has: page.getByRole("heading", { name: "礁溪鄉", exact: true }),
-    });
+  const upgraded = page.locator(".symbol-card").filter({
+    has: page.getByRole("heading", { name: "礁溪鄉", exact: true }),
+  });
   await expect(upgraded.locator("img")).not.toHaveAttribute(
     "src",
     fixture.image,
   );
-  const custom = page
-    .locator(".symbol-card")
-    .filter({
-      has: page.getByRole("heading", { name: "永康區", exact: true }),
-    });
+  const custom = page.locator(".symbol-card").filter({
+    has: page.getByRole("heading", { name: "永康區", exact: true }),
+  });
   await expect(custom.locator("img")).toHaveAttribute("src", fixture.image);
   await page.getByLabel("選擇宜蘭門牌原圖").setInputFiles({
     name: "original.png",

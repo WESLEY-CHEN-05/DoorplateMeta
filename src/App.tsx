@@ -430,7 +430,7 @@ export default function App() {
                           <span>2</span>
                           <div>
                             <strong>裁出符號</strong>
-                            <p>只保留圖形，避開所有文字與數字。</p>
+                            <p>保留圖案與數字，避開地名與路名等文字。</p>
                           </div>
                         </li>
                         <li>
@@ -911,7 +911,7 @@ function ImportConfirmation({
     >
       <p>
         以下是前 {Math.min(questions.length, 24)}{" "}
-        個符號的預覽。請確認題庫來源與地區對應，圖片不可含文字。
+        個符號的預覽。請確認題庫來源與地區對應，裁除地名與路名等文字；門牌數字可保留。
       </p>
       <div className="import-preview">
         {questions.slice(0, 24).map((q) => (
@@ -930,7 +930,7 @@ function ImportConfirmation({
           checked={approved}
           onChange={(e) => setApproved(e.target.checked)}
         />
-        我已核對整份題庫的地區對應，且符號圖不含文字。
+        我已核對整份題庫的地區對應，且符號圖不含地名與路名等文字。
       </label>
     </Confirmation>
   );
